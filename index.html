@@ -20,13 +20,19 @@
             --code-bg:   #1a3a60;
             --code-ink:  #8ec4e9;
             --radius:    20px;
+
+            /* 版面尺度：正文列宽、页边距、图标卡片占列宽的比例。
+               卡片的留白全部由这三个值推出来，不写死任何像素。 */
+            --column:     900px;
+            --gutter:     20px;
+            --logo-ratio: 0.8;
         }
 
         * { box-sizing: border-box; }
 
         body {
             margin: 0;
-            padding: 0 20px 60px;
+            padding: 0 var(--gutter) 60px;
             background-color: var(--bg);
             background-image: linear-gradient(180deg, #8ec4e9 0%, #7cb6e0 55%, #6aa8d8 100%);
             background-attachment: fixed;
@@ -106,14 +112,27 @@
             text-align: center;
         }
 
+        /* ---------- 图标卡片 ----------
+           卡片宽度 = 正文列的 80%（.hero 已是 900px 居中列，所以 80% 直接就是
+           列宽的 80%，不需要 vw 换算）。
+           min-width: fit-content 处理「溢出除外」：内容比 80% 更宽时自己撑开；
+           max-width: 100% 保证永不出界。
+           图标贴左、字标贴右，中间那一整段留白由 flex 自动算出来 ——
+           不靠占位图片，也不按屏幕档位写死 padding。 */
         .logo-wrapper {
-            display: inline-flex;
+            display: flex;
             align-items: center;
-            gap: 16px;
+            justify-content: space-between;
+            gap: 18px;
+
+            width: calc(var(--logo-ratio) * 100%);
+            min-width: fit-content;
+            max-width: 100%;
+            margin: 0 auto 26px;
+            padding: 16px 30px;
+
             background: var(--surface);
             border-radius: 999px;
-            padding: 16px 34px 16px 26px;
-            margin-bottom: 26px;
             box-shadow: 0 10px 30px rgba(26, 43, 76, 0.16);
         }
 
@@ -405,7 +424,8 @@
         .lang-en [data-lang="zh"] { display: none !important; }
 
         @media (max-width: 640px) {
-            body { padding: 0 12px 40px; }
+            :root { --gutter: 12px; }
+            body { padding-bottom: 40px; }
             .dev-banner { margin-left: -12px; margin-right: -12px; }
             .content { padding: 24px 20px 30px; border-radius: 16px; }
             .logo-wrapper { padding: 14px 26px 14px 20px; gap: 12px; }
