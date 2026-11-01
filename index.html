@@ -324,7 +324,16 @@
         }
 
         /* ---------- 表格 ---------- */
-        .table-wrap { overflow-x: auto; margin-bottom: 18px; }
+        /* 表格是唯一例外：做成圆角卡片，并在内容区里居中 */
+        .table-wrap {
+            max-width: 760px;
+            margin: 0 auto 18px;
+            border: 1px solid rgba(26, 43, 76, 0.16);
+            border-radius: 14px;
+            overflow: hidden auto;
+            background: rgba(255, 255, 255, 0.22);
+            -webkit-overflow-scrolling: touch;
+        }
 
         table {
             width: 100%;
@@ -333,11 +342,13 @@
         }
 
         th, td {
-            text-align: left;
-            padding: 10px 12px;
-            border-bottom: 1px solid rgba(26, 43, 76, 0.18);
-            vertical-align: top;
+            text-align: center;
+            padding: 10px 14px;
+            border-bottom: 1px solid rgba(26, 43, 76, 0.14);
+            vertical-align: middle;
         }
+
+        tr:last-child td { border-bottom: none; }
 
         th {
             background: rgba(255, 255, 255, 0.35);
