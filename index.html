@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="zh-Hans" class="lang-zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Finx</title>
+    <meta name="description" content="Finx —— Fink 的延续。macOS 上的源码构建包管理器，沿用 dpkg/apt 的依赖求解与副作用控制，统一安装在 /opt/finx。">
+    <style>
+        /* 配色取自 WaveProxy：浅蓝底、深海军蓝字、警示黄做强调。 */
+        :root {
+            --bg:        #8ec4e9;
+            --bg-deep:   #2a6099;
+            --ink:       #1a2b4c;
+            --ink-soft:  #4a6a90;
+            --ink-faint: #a0b0d0;
+            --surface:   #ffffff;
+            --line:      #3a6aa0;
+            --accent:    #f1c40f;
+            --code-bg:   #1a3a60;
+            --code-ink:  #8ec4e9;
+            --radius:    20px;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            padding: 0 20px 60px;
+            background-color: var(--bg);
+            background-image: linear-gradient(180deg, #8ec4e9 0%, #7cb6e0 55%, #6aa8d8 100%);
+            background-attachment: fixed;
+            color: var(--ink);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                         "Helvetica Neue", "PingFang SC", "Hiragino Sans GB", sans-serif;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ---------- 顶部开发中横幅 ---------- */
+        .dev-banner {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            margin: 0 -20px 32px;
+            padding: 10px 20px;
+            background: var(--accent);
+            color: var(--ink);
+            text-align: center;
+            font-size: 0.95rem;
+            font-weight: 600;
+            letter-spacing: 0.01em;
+            box-shadow: 0 2px 12px rgba(26, 43, 76, 0.18);
+        }
+
+        .dev-banner .dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            margin-right: 8px;
+            border-radius: 50%;
+            background: var(--ink);
+            vertical-align: middle;
+            animation: pulse 1.8s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50%      { opacity: 0.25; }
+        }
+
+        /* ---------- 语言切换 ---------- */
+        .lang-switch {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            max-width: 900px;
+            margin: 0 auto 6px;
+        }
+
+        .lang-btn {
+            appearance: none;
+            border: 1px solid var(--line);
+            background: transparent;
+            color: var(--ink);
+            padding: 5px 14px;
+            border-radius: 999px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.18s ease, color 0.18s ease;
+        }
+
+        .lang-btn:hover { background: rgba(255, 255, 255, 0.45); }
+
+        .lang-btn.active {
+            background: var(--ink);
+            border-color: var(--ink);
+            color: var(--surface);
+        }
+
+        /* ---------- 页头 ---------- */
+        .hero {
+            max-width: 900px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .logo-wrapper {
+            display: inline-flex;
+            align-items: center;
+            gap: 14px;
+            background: var(--surface);
+            border-radius: 30px;
+            padding: 14px 30px 14px 18px;
+            margin-bottom: 26px;
+            box-shadow: 0 10px 30px rgba(26, 43, 76, 0.16);
+        }
+
+        /* 图标位置先空着。把图放进同目录后，在这里换成 <img>：
+           <img src="logo.png" alt="Finx" class="logo-icon"> */
+        .logo-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            border: 2px dashed var(--ink-faint);
+            background: #f7fafd;
+            flex: 0 0 auto;
+        }
+
+        .logo-word {
+            font-size: 1.75rem;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+            color: var(--ink);
+        }
+
+        .logo-word .x { color: var(--bg-deep); }
+
+        .tagline {
+            max-width: 760px;
+            margin: 0 auto 18px;
+            font-size: 1.08rem;
+            color: var(--ink);
+            opacity: 0.92;
+        }
+
+        /* 版本信息：结构照 MacWave（内联 v-line、六连 nbsp 分隔、移动端切块），
+           只有颜色取本页调色板。 */
+        .version-block {
+            color: var(--ink-soft);
+            font-size: 0.95rem;
+            margin-top: -10px;
+            margin-bottom: 30px;
+        }
+
+        .version-block .v-line {
+            display: inline;
+        }
+
+        .version-block .v-line:first-child::after {
+            content: "\00a0\00a0\00a0\00a0\00a0\00a0";
+            white-space: pre;
+        }
+
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: center;
+            margin-bottom: 8px;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 12px 28px;
+            border-radius: 999px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.98rem;
+            transition: transform 0.18s ease, box-shadow 0.18s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(26, 43, 76, 0.22);
+        }
+
+        .btn-primary {
+            background: var(--ink);
+            color: var(--surface);
+        }
+
+        .btn-ghost {
+            background: var(--surface);
+            color: var(--ink);
+        }
+
+        /* ---------- 内容区 ----------
+           不上白卡片：内容直接铺在背景上，与 MacWave 的做法一致。
+           段落之间靠标题的分隔线断开。 */
+        .content {
+            max-width: 900px;
+            margin: 44px auto 0;
+            padding: 0 4px;
+            text-align: left;
+        }
+
+        .content h2 {
+            font-size: 1.45rem;
+            margin: 44px 0 14px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid rgba(26, 43, 76, 0.28);
+            color: var(--ink);
+        }
+
+        .content h2:first-child { margin-top: 0; }
+
+        .content h3 {
+            font-size: 1.1rem;
+            margin: 26px 0 10px;
+            color: var(--ink);
+        }
+
+        .content p {
+            font-size: 1rem;
+            margin: 0 0 14px;
+            color: var(--ink);
+        }
+
+        .content ul {
+            margin: 0 0 16px;
+            padding-left: 1.25em;
+            font-size: 1rem;
+        }
+
+        .content li { margin-bottom: 6px; }
+
+        .content li::marker { color: var(--bg-deep); }
+
+        strong { font-weight: 650; }
+
+        /* 行内代码与表头都用代码块的底色，不留浅白底 */
+        code {
+            background: var(--bg-deep);
+            color: #d4e6f5;
+            padding: 2px 6px;
+            border-radius: 5px;
+            font-size: 0.9em;
+            font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+        }
+
+        /* ---------- 代码块（WaveProxy 的配色） ---------- */
+        .code-block {
+            position: relative;
+            margin: 0 0 18px;
+            background: var(--bg-deep);
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .code-block pre {
+            margin: 0;
+            padding: 18px 52px 18px 20px;
+            overflow-x: auto;
+            color: #d4d4d4;
+            font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+            font-size: 0.88rem;
+            line-height: 1.6;
+        }
+
+        .code-block .prompt { color: var(--accent); }
+
+        .copy-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            padding: 7px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.18s ease;
+        }
+
+        .copy-btn:hover { background: rgba(255, 255, 255, 0.1); }
+
+        .copy-icon {
+            position: relative;
+            width: 16px;
+            height: 16px;
+        }
+
+        .square-back,
+        .square-front {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            border: 1.5px solid #a0b0d0;
+            border-radius: 2px;
+            transition: all 0.2s ease;
+        }
+
+        .square-back { top: 0; left: 0; opacity: 0.7; }
+
+        .square-front {
+            bottom: 0;
+            right: 0;
+            background: rgba(26, 58, 96, 0.55);
+            transform: translate(-4px, -4px);
+        }
+
+        .copy-btn:hover .square-back,
+        .copy-btn:hover .square-front { border-color: #ffffff; }
+
+        .copy-btn.copied .square-back,
+        .copy-btn.copied .square-front {
+            background: var(--accent);
+            border-color: var(--accent);
+            opacity: 1;
+        }
+
+        /* ---------- 表格 ---------- */
+        .table-wrap { overflow-x: auto; margin-bottom: 18px; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.95rem;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 10px 12px;
+            border-bottom: 1px solid rgba(26, 43, 76, 0.18);
+            vertical-align: top;
+        }
+
+        th {
+            background: rgba(255, 255, 255, 0.35);
+            color: var(--ink);
+            font-weight: 650;
+            white-space: nowrap;
+        }
+
+        /* ---------- 提示条 ---------- */
+        .note {
+            border-left: 4px solid var(--accent);
+            background: rgba(241, 196, 15, 0.22);
+            padding: 12px 16px;
+            border-radius: 0 10px 10px 0;
+            margin: 0 0 18px;
+            font-size: 0.95rem;
+        }
+
+        .note strong { color: var(--ink); }
+
+        /* ---------- 页脚 ---------- */
+        footer {
+            max-width: 900px;
+            margin: 34px auto 0;
+            text-align: center;
+            font-size: 0.85rem;
+            color: var(--ink-soft);
+        }
+
+        footer a {
+            color: var(--ink);
+            text-decoration: none;
+            border-bottom: 1px solid rgba(26, 43, 76, 0.3);
+        }
+
+        footer a:hover { border-bottom-color: var(--ink); }
+
+        /* ---------- 语言显隐 ---------- */
+        .lang-zh [data-lang="en"],
+        .lang-en [data-lang="zh"] { display: none !important; }
+
+        @media (max-width: 640px) {
+            body { padding: 0 12px 40px; }
+            .dev-banner { margin-left: -12px; margin-right: -12px; }
+            .content { padding: 24px 20px 30px; border-radius: 16px; }
+            .logo-wrapper { padding: 12px 20px 12px 14px; }
+            .logo-word { font-size: 1.45rem; }
+            .content h2 { font-size: 1.28rem; }
+
+            .version-block .v-line {
+                display: block;
+                margin: 0;
+                line-height: 1.6;
+            }
+
+            .version-block .v-line:first-child::after {
+                content: "";
+            }
+
+            .version-block {
+                text-align: center;
+                letter-spacing: 0;
+                font-size: 0.95rem;
+                margin-top: -10px;
+                margin-bottom: 30px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="dev-banner">
+        <span class="dot"></span>
+        <span data-lang="zh">正在开发中 —— 本页与项目均在早期阶段，接口与行为可能随时调整</span>
+        <span data-lang="en">Under development — both this page and the project are early-stage; interfaces may change</span>
+    </div>
+
+    <div class="lang-switch">
+        <button class="lang-btn active" type="button" data-lang-set="zh" onclick="setLanguage('zh')">简体中文</button>
+        <button class="lang-btn" type="button" data-lang-set="en" onclick="setLanguage('en')">English</button>
+    </div>
+
+    <header class="hero">
+        <div class="logo-wrapper">
+            <!-- 图标先空着，位置与尺寸已留好 -->
+            <div class="logo-icon" aria-hidden="true"></div>
+            <div class="logo-word">Fin<span class="x">x</span></div>
+        </div>
+
+        <p class="tagline" data-lang="zh">
+            Fink 的延续。沿用 <strong>dpkg / apt</strong> 的依赖求解与副作用控制，把 macOS 上的源码构建包管理器搬进现代工具链。
+        </p>
+        <p class="tagline" data-lang="en">
+            The continuation of Fink. It keeps the <strong>dpkg / apt</strong> dependency solving and side-effect control that made Fink work, and brings it to a modern toolchain.
+        </p>
+
+        <div class="version-block" data-lang="zh">
+            <span class="v-line">当前版本 : 0.45.99.git</span>
+            <span class="v-line">状态 : 开发中</span>
+        </div>
+        <div class="version-block" data-lang="en">
+            <span class="v-line">Current Version : 0.45.99.git</span>
+            <span class="v-line">Status : Development</span>
+        </div>
+
+        <div class="actions">
+            <a href="https://github.com/Fincote/Finx" class="btn btn-primary" data-lang="zh">在 GitHub 上查看</a>
+            <a href="https://github.com/Fincote/Finx" class="btn btn-primary" data-lang="en">View on GitHub</a>
+            <a href="#install" class="btn btn-ghost" data-lang="zh">开始安装</a>
+            <a href="#install" class="btn btn-ghost" data-lang="en">Install</a>
+        </div>
+    </header>
+
+    <main class="content">
+
+        <h2 data-lang="zh">关于 Finx</h2>
+        <h2 data-lang="en">About Finx</h2>
+        <p data-lang="zh">
+            <strong>Finx</strong> 是 <strong>Fink</strong> 的延续。<strong>Fink</strong> 是 macOS 上老牌的包管理器，建立在 Debian 的 <code>dpkg</code> / <code>apt</code> 体系之上：它下载原始源码，按需打补丁，为 Darwin 配置好，编译并安装。
+        </p>
+        <p data-lang="en">
+            <strong>Finx</strong> is the continuation of <strong>Fink</strong>, the long-standing macOS package manager built on Debian's <code>dpkg</code> / <code>apt</code> stack: it downloads original source releases, patches them when necessary, configures them for Darwin, then compiles and installs.
+        </p>
+        <p data-lang="zh">
+            名字里的 <strong>x</strong> 取「扩展」之意。dpkg / apt 的依赖求解与副作用控制至今依然先进，值得保留；需要扩展的是安装前缀、文档与可维护性 —— 而不是换掉内核。
+        </p>
+        <p data-lang="en">
+            The <strong>x</strong> stands for extension. dpkg / apt dependency solving and side-effect control are still ahead of their time and worth keeping; what needs extending is the install prefix, the documentation, and maintainability — not the kernel.
+        </p>
+
+        <h2 data-lang="zh">为什么选择 Finx</h2>
+        <h2 data-lang="en">Why Finx</h2>
+        <ul data-lang="zh">
+            <li><strong>真有依赖求解。</strong> 走 dpkg / apt，而不是「先装这个再装那个」的脚本约定：<code>Depends</code>、<code>Conflicts</code>、<code>Provides</code>、虚拟包、<code>shlibs</code> 符号依赖都由包管理器算。</li>
+            <li><strong>副作用可控。</strong> <code>conffiles</code> 让你改过的配置在升级时不被覆盖；<code>preinst</code> / <code>postinst</code> / <code>prerm</code> / <code>postrm</code> 四个维护者脚本定义了每一步该做什么。</li>
+            <li><strong>落地前先求解。</strong> 安装前会用一致性求解算出「为了装这批包，需要临时卸掉谁」，而不是装到一半才发现冲突。</li>
+            <li><strong>单一规范前缀。</strong> 全仓库统一到 <code>/opt/finx</code>，不再按 macOS 版本在 <code>/sw</code> 与 <code>/opt/sw</code> 之间分叉。</li>
+            <li><strong>源码与二进制双分发。</strong> 有预编译包就下，没有就从源码编；两者走同一条安装路径。</li>
+            <li><strong>纯 Perl + Shell。</strong> 没有编译型依赖，读代码不需要先配好工具链。</li>
+            <li><strong>锁是真锁。</strong> 先抢 dpkg 数据库锁再 <code>exec</code>，锁随子进程继承，并发操作不会互相踩。</li>
+        </ul>
+        <ul data-lang="en">
+            <li><strong>Real dependency solving.</strong> dpkg / apt, not a "install this before that" convention: <code>Depends</code>, <code>Conflicts</code>, <code>Provides</code>, virtual packages and <code>shlibs</code> symbol dependencies are computed by the package manager.</li>
+            <li><strong>Controlled side effects.</strong> <code>conffiles</code> keep your edited configuration across upgrades; the four maintainer scripts — <code>preinst</code>, <code>postinst</code>, <code>prerm</code>, <code>postrm</code> — define exactly what happens at each step.</li>
+            <li><strong>Resolved before landing.</strong> A consistency pass works out which packages must be temporarily removed to satisfy the install, instead of discovering the conflict halfway through.</li>
+            <li><strong>One canonical prefix.</strong> Everything is unified on <code>/opt/finx</code>; no more splitting between <code>/sw</code> and <code>/opt/sw</code> by macOS version.</li>
+            <li><strong>Source and binary distribution.</strong> Use a prebuilt package when one exists, compile when it does not; both take the same install path.</li>
+            <li><strong>Perl and Shell only.</strong> No compiled dependencies, so reading the code does not require a working toolchain.</li>
+            <li><strong>Real locking.</strong> The dpkg database lock is taken before <code>exec</code>, so the child inherits it and concurrent operations cannot trample each other.</li>
+        </ul>
+
+        <h2 data-lang="zh">支持的 macOS 版本</h2>
+        <h2 data-lang="en">Supported macOS Versions</h2>
+        <p data-lang="zh">
+            当前发行版树为 <code>10.9-libcxx</code>，覆盖 <strong>macOS 10.9 及以上</strong>，Intel 与 Apple 芯片均在支持范围内。更早的系统需要更老的发行版树。
+        </p>
+        <p data-lang="en">
+            The current distribution tree is <code>10.9-libcxx</code>, covering <strong>macOS 10.9 and later</strong> on both Intel and Apple silicon. Earlier systems need older distribution trees.
+        </p>
+
+        <h2 id="install" data-lang="zh">安装 Finx</h2>
+        <h2 id="install-en" data-lang="en">Install Finx</h2>
+
+        <div class="note" data-lang="zh">
+            <strong>首次安装需要 Xcode Command Line Tools。</strong> Finx 的起点是宿主的 C 编译器 —— 它要先编译出一个 <code>dpkg</code>，再用这个 dpkg 安装自己。
+        </div>
+        <div class="note" data-lang="en">
+            <strong>The first install needs the Xcode Command Line Tools.</strong> Finx starts from the host C compiler: it compiles a <code>dpkg</code> first, then uses that dpkg to install itself.
+        </div>
+
+        <h3 data-lang="zh">准备环境</h3>
+        <h3 data-lang="en">Prepare</h3>
+        <div class="code-block">
+            <button class="copy-btn" type="button" onclick="copyCode(this)" aria-label="Copy"><span class="copy-icon"><span class="square-back"></span><span class="square-front"></span></span></button>
+            <pre><span class="prompt">$</span> xcode-select --install
+<span class="prompt">$</span> sudo xcodebuild -license</pre>
+        </div>
+
+        <h3 data-lang="zh">从源码自举</h3>
+        <h3 data-lang="en">Bootstrap from source</h3>
+        <div class="code-block">
+            <button class="copy-btn" type="button" onclick="copyCode(this)" aria-label="Copy"><span class="copy-icon"><span class="square-back"></span><span class="square-front"></span></span></button>
+            <pre><span class="prompt">$</span> tar xf finx-0.45.99.tar.gz
+<span class="prompt">$</span> cd finx-0.45.99
+<span class="prompt">$</span> ./bootstrap</pre>
+        </div>
+        <p data-lang="zh">
+            自举会先编译 <code>tar</code> 与 <code>dpkg</code> 到临时脚手架，再用它们把基础包装进 <code>/opt/finx</code>，最后删掉脚手架。详细过程见仓库里的 <code>INSTALL</code>。
+        </p>
+        <p data-lang="en">
+            Bootstrap compiles <code>tar</code> and <code>dpkg</code> into a scratch tree first, uses them to install the base packages into <code>/opt/finx</code>, then removes the scaffolding. The full procedure lives in <code>INSTALL</code>.
+        </p>
+
+        <h3 data-lang="zh">配置 shell 环境</h3>
+        <h3 data-lang="en">Set up your shell</h3>
+        <div class="code-block">
+            <button class="copy-btn" type="button" onclick="copyCode(this)" aria-label="Copy"><span class="copy-icon"><span class="square-back"></span><span class="square-front"></span></span></button>
+            <pre><span class="prompt">$</span> . /opt/finx/bin/init.sh</pre>
+        </div>
+
+        <h2 data-lang="zh">使用</h2>
+        <h2 data-lang="en">Usage</h2>
+        <div class="code-block">
+            <button class="copy-btn" type="button" onclick="copyCode(this)" aria-label="Copy"><span class="copy-icon"><span class="square-back"></span><span class="square-front"></span></span></button>
+            <pre><span class="prompt">$</span> fink install wget          <span style="opacity:.55"># 安装</span>
+<span class="prompt">$</span> fink list                  <span style="opacity:.55"># 列出可用软件包</span>
+<span class="prompt">$</span> fink describe wget        <span style="opacity:.55"># 查看包描述</span>
+<span class="prompt">$</span> fink remove wget           <span style="opacity:.55"># 卸载，保留配置文件</span>
+<span class="prompt">$</span> fink purge wget            <span style="opacity:.55"># 卸载并删除配置文件</span>
+<span class="prompt">$</span> fink selfupdate            <span style="opacity:.55"># 更新包管理器自身</span>
+<span class="prompt">$</span> fink update-all            <span style="opacity:.55"># 更新全部已安装包</span></pre>
+        </div>
+        <p data-lang="zh">
+            装包操作需要 root，<code>fink</code> 会自己调用 <code>sudo</code>，不必手动加。
+        </p>
+        <p data-lang="en">
+            Package operations need root; <code>fink</code> invokes <code>sudo</code> itself, so you do not add it by hand.
+        </p>
+
+        <h2 data-lang="zh">与 Fink 的关系</h2>
+        <h2 data-lang="en">Relationship to Fink</h2>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th data-lang="zh">方面</th>
+                        <th data-lang="en">Aspect</th>
+                        <th data-lang="zh">Fink</th>
+                        <th data-lang="en">Fink</th>
+                        <th data-lang="zh">Finx</th>
+                        <th data-lang="en">Finx</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td data-lang="zh">安装前缀</td>
+                        <td data-lang="en">Install prefix</td>
+                        <td><code>/sw</code> / <code>/opt/sw</code></td>
+                        <td><code>/opt/finx</code></td>
+                    </tr>
+                    <tr>
+                        <td data-lang="zh">包管理内核</td>
+                        <td data-lang="en">Package kernel</td>
+                        <td colspan="2" data-lang="zh">dpkg / apt（不变）</td>
+                        <td colspan="2" data-lang="en">dpkg / apt (unchanged)</td>
+                    </tr>
+                    <tr>
+                        <td data-lang="zh">实现语言</td>
+                        <td data-lang="en">Language</td>
+                        <td colspan="2" data-lang="zh">Perl + Shell（不变）</td>
+                        <td colspan="2" data-lang="en">Perl + Shell (unchanged)</td>
+                    </tr>
+                    <tr>
+                        <td data-lang="zh">文档</td>
+                        <td data-lang="en">Documentation</td>
+                        <td data-lang="zh">分散，版本滞后</td>
+                        <td data-lang="en">Scattered and stale</td>
+                        <td data-lang="zh">统一到 <code>docs/</code>，与代码同步</td>
+                        <td data-lang="en">Consolidated under <code>docs/</code>, kept in sync</td>
+                    </tr>
+                    <tr>
+                        <td data-lang="zh">安装器</td>
+                        <td data-lang="en">Installer</td>
+                        <td data-lang="zh">必须源码自举</td>
+                        <td data-lang="en">Source bootstrap only</td>
+                        <td data-lang="zh">二进制种子安装器（开发中）</td>
+                        <td data-lang="en">Seed-based installer (in progress)</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h2 data-lang="zh">面向开发者</h2>
+        <h2 data-lang="en">For Developers</h2>
+        <div class="code-block">
+            <button class="copy-btn" type="button" onclick="copyCode(this)" aria-label="Copy"><span class="copy-icon"><span class="square-back"></span><span class="square-front"></span></span></button>
+            <pre><span class="prompt">$</span> make test          <span style="opacity:.55"># 完整性检查 + 全部测试</span>
+<span class="prompt">$</span> make format        <span style="opacity:.55"># 缩进检查（Perl 用 tab，shell 用 4 空格）</span>
+<span class="prompt">$</span> ./inject.pl /opt/finx   <span style="opacity:.55"># 把工作副本装进已有安装</span></pre>
+        </div>
+        <p data-lang="zh">
+            仓库里还有 <code>docs/TECHNICAL-GUIDE.md</code>，讲自举链路、装包流水线与 dpkg 定制；<code>AGENTS.md</code> 记录了代码约定。
+        </p>
+        <p data-lang="en">
+            The repository also ships <code>docs/TECHNICAL-GUIDE.md</code> covering the bootstrap chain, the packaging pipeline and the dpkg patches, plus <code>AGENTS.md</code> for conventions.
+        </p>
+
+        <h2 data-lang="zh">许可证</h2>
+        <h2 data-lang="en">License</h2>
+        <p data-lang="zh">
+            Finx 沿用 Fink 的许可证，以 <strong>GNU General Public License 第二版</strong> 发布。详见仓库中的 <code>COPYING</code>。
+        </p>
+        <p data-lang="en">
+            Finx keeps Fink's license and is released under the <strong>GNU General Public License, version 2</strong>. See <code>COPYING</code> in the repository.
+        </p>
+
+    </main>
+
+    <footer>
+        <p>
+            <a href="https://github.com/Fincote/Finx">github.com/Fincote/Finx</a>
+            &nbsp;·&nbsp;
+            <span data-lang="zh">本页正在开发中</span>
+            <span data-lang="en">This page is under development</span>
+        </p>
+    </footer>
+
+    <script>
+        function setLanguage(lang) {
+            const root = document.documentElement;
+            root.classList.remove('lang-en', 'lang-zh');
+            root.classList.add('lang-' + lang);
+            root.lang = (lang === 'zh') ? 'zh-Hans' : 'en';
+            document.querySelectorAll('.lang-btn').forEach(function (btn) {
+                btn.classList.toggle('active', btn.getAttribute('data-lang-set') === lang);
+            });
+            try { localStorage.setItem('finx-lang', lang); } catch (e) {}
+        }
+
+        function copyCode(btn) {
+            const pre = btn.parentElement.querySelector('pre');
+            if (!pre) return;
+            let text = pre.textContent;
+            text = text.replace(/^\$\s/gm, '');
+            navigator.clipboard.writeText(text).then(function () {
+                btn.classList.add('copied');
+                setTimeout(function () {
+                    btn.classList.remove('copied');
+                }, 1600);
+            }).catch(function (err) {
+                console.error('Failed to copy: ', err);
+            });
+        }
+
+        (function () {
+            let saved = null;
+            try { saved = localStorage.getItem('finx-lang'); } catch (e) {}
+            setLanguage(saved === 'en' ? 'en' : 'zh');
+        })();
+    </script>
+
+</body>
+</html>
