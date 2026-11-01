@@ -1,8 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Finx">
   <title>Finx</title>
-  <g transform="translate(46 79) scale(0.7)">
-    <path fill="#102e76" d="M0 0h304v57H63v171h221v56H63v221H0z"/>
-    <path fill="#1e4ca2" d="M336 194h57l206 310h-57z"/>
-    <path fill="#1e4ca2" d="M543 194h57L391 504h-57z"/>
+  <g transform="translate(52 84) scale(0.68)" stroke-width="17.6" stroke-linejoin="miter" stroke-linecap="butt">
+    <path fill="#102e76" stroke="#102e76" d="M0 0h304v57H63v171h221v56H63v221H0z"/>
+    <path fill="#1e4ca2" stroke="#1e4ca2" d="M336 194h57l206 310h-57z"/>
+    <path fill="#1e4ca2" stroke="#1e4ca2" d="M543 194h57L391 504h-57z"/>
   </g>
 </svg>
