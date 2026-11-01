@@ -48,6 +48,10 @@
             position: sticky;
             top: 0;
             z-index: 50;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
             margin: 0 -20px 32px;
             padding: 10px 20px;
             background: var(--accent);
@@ -59,14 +63,15 @@
             box-shadow: 0 2px 12px rgba(26, 43, 76, 0.18);
         }
 
+        /* 两行时行距收紧一点，圆点靠 flex 垂直居中 */
+        .dev-banner [data-lang] { line-height: 1.45; }
+
         .dev-banner .dot {
-            display: inline-block;
+            flex: 0 0 auto;
             width: 8px;
             height: 8px;
-            margin-right: 8px;
             border-radius: 50%;
             background: var(--ink);
-            vertical-align: middle;
             animation: pulse 1.8s ease-in-out infinite;
         }
 
@@ -454,8 +459,8 @@
 
     <div class="dev-banner">
         <span class="dot"></span>
-        <span data-lang="zh">正在开发中 —— 本页与项目均在早期阶段，接口与行为可能随时调整</span>
-        <span data-lang="en">Under development — both this page and the project are early-stage; interfaces may change</span>
+        <span data-lang="zh">正在开发中 —— 接口与行为可能随时调整<br>当前阶段不推荐安装（开发者除外）</span>
+        <span data-lang="en">Under development — interfaces may change<br>Not recommended for installation yet (developers excepted)</span>
     </div>
 
     <div class="lang-switch">
