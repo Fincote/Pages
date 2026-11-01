@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Finx</title>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
     <meta name="description" content="Finx —— Fink 的延续。macOS 上的源码构建包管理器，沿用 dpkg/apt 的依赖求解与副作用控制，统一安装在 /opt/finx。">
     <style>
         /* 配色取自 WaveProxy：浅蓝底、深海军蓝字、警示黄做强调。 */
@@ -116,14 +117,11 @@
             box-shadow: 0 10px 30px rgba(26, 43, 76, 0.16);
         }
 
-        /* 图标位置先空着。把图放进同目录后，在这里换成 <img>：
-           <img src="logo.png" alt="Finx" class="logo-icon"> */
+        /* 图标是 600×505 的字形，按宽度缩放、保持比例 */
         .logo-icon {
-            width: 44px;
-            height: 44px;
-            border-radius: 12px;
-            border: 2px dashed var(--ink-faint);
-            background: #f7fafd;
+            width: 46px;
+            height: auto;
+            display: block;
             flex: 0 0 auto;
         }
 
@@ -142,6 +140,22 @@
             font-size: 1.08rem;
             color: var(--ink);
             opacity: 0.92;
+        }
+
+        /* 名字的由来：一行小字，放在 tagline 下面 */
+        .formula {
+            margin: -8px auto 18px;
+            font-size: 0.86rem;
+            color: var(--ink-soft);
+            letter-spacing: 0.01em;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .formula code {
+            background: none;
+            color: inherit;
+            padding: 0;
+            font-size: inherit;
         }
 
         /* 版本信息：结构照 MacWave（内联 v-line、六连 nbsp 分隔、移动端切块），
@@ -433,8 +447,7 @@
 
     <header class="hero">
         <div class="logo-wrapper">
-            <!-- 图标先空着，位置与尺寸已留好 -->
-            <div class="logo-icon" aria-hidden="true"></div>
+            <img src="fx.svg" alt="Finx" class="logo-icon">
             <div class="logo-word">Fin<span class="x">x</span></div>
         </div>
 
@@ -444,6 +457,8 @@
         <p class="tagline" data-lang="en">
             The continuation of Fink. It keeps the <strong>dpkg / apt</strong> dependency solving and side-effect control that made Fink work, and brings it to a modern toolchain.
         </p>
+
+        <p class="formula">f(x) = f (fincote) = f (fink) + f(fincotedevelopers).</p>
 
         <div class="version-block" data-lang="zh">
             <span class="v-line">当前版本 : 0.45.99.git</span>
