@@ -421,6 +421,78 @@
 
         footer a:hover { border-bottom-color: var(--ink); }
 
+        /* ---------- 联系方式 ----------
+           逐条照搬 MacWave 的 .contact-section：margin-top 40px、padding 20px 0、
+           h2 2rem/bold/margin-bottom 8px/inline-block、60×2 分隔线、条目 gap 12px、
+           标签与链接 gap 8px、list 下间距 12px、提示语 0.85rem/opacity 0.7。
+           唯一改动是颜色——本页是浅蓝底，MacWave 的白字照搬会看不见，
+           因此换成同一角色的调色板变量（--ink / --line）。
+           MacWave 的区块是 body 的 flex 子项、宽度按内容收缩，
+           这里用 width: fit-content + 自动左右外边距复现同样的宽度行为。 */
+        .contact-section {
+            width: fit-content;
+            margin: 40px auto 0;
+            padding: 20px 0;
+            text-align: center;
+            /* MacWave 的 body 没设行高，区块继承 normal；本页 body 是 1.6，
+               不覆盖会让三行条目和提示语整体被撑高。 */
+            line-height: normal;
+        }
+
+        .contact-section h2 {
+            font-size: 2rem;
+            color: var(--ink);
+            font-weight: bold;
+            margin-bottom: 8px;
+            display: inline-block;
+        }
+
+        .contact-divider {
+            width: 60px;
+            height: 2px;
+            background-color: var(--line);
+            margin: 0 auto 20px auto;
+        }
+
+        .contact-items {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .contact-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--ink);
+            font-size: 1.1rem;
+        }
+
+        .contact-label {
+            font-weight: bold;
+            color: var(--ink);
+        }
+
+        .contact-item a {
+            color: var(--ink);
+            text-decoration: none;
+            transition: opacity 0.2s;
+        }
+
+        .contact-item a:hover {
+            text-decoration: underline;
+            opacity: 0.8;
+        }
+
+        .contact-hint {
+            font-size: 0.85rem;
+            color: var(--ink);
+            opacity: 0.7;
+            margin-top: 6px;
+        }
+
         /* ---------- 语言显隐 ---------- */
         .lang-zh [data-lang="en"],
         .lang-en [data-lang="zh"] { display: none !important; }
@@ -755,6 +827,28 @@
         </p>
 
     </main>
+
+    <div class="contact-section">
+        <h2 data-lang="zh">联系我们</h2>
+        <h2 data-lang="en">Contact Us</h2>
+        <div class="contact-divider"></div>
+        <div class="contact-items">
+            <div class="contact-item">
+                <span class="contact-label">GitHub</span>
+                <a href="https://github.com/Fincote" target="_blank" rel="noopener">@Fincote</a>
+            </div>
+            <div class="contact-item">
+                <span class="contact-label">Twitter</span>
+                <a href="https://twitter.com/MacFinx" target="_blank" rel="noopener">@MacFinx</a>
+            </div>
+            <div class="contact-item">
+                <span class="contact-label">Email</span>
+                <a href="mailto:zsh@finx.sh">zsh@finx.sh</a>
+            </div>
+        </div>
+        <div class="contact-hint" data-lang="zh">点击链接即可打开。</div>
+        <div class="contact-hint" data-lang="en">Click the links to open.</div>
+    </div>
 
     <footer>
         <p>
