@@ -562,23 +562,23 @@
         <h3 data-lang="en">One command</h3>
         <div class="code-block">
             <button class="copy-btn" type="button" onclick="copyCode(this)" aria-label="Copy"><span class="copy-icon"><span class="square-back"></span><span class="square-front"></span></span></button>
-            <pre><span class="prompt">$</span> /bin/bash -c "$(curl -fsSL https://fastly.jsdelivr.net/gh/Fincote/Finx@main/finx-install/standalone.sh)"</pre>
+            <pre><span class="prompt">$</span> /bin/bash -c "$(curl -fsSL https://fastly.jsdelivr.net/gh/Fincote/Finx@main/finx-install/install.sh)"</pre>
         </div>
         <p data-lang="zh">
             脚本从 jsDelivr 取，国内可直连；仓库里同一份文件也在
-            <code>finx-install/standalone.sh</code>。参数放在 <code>--</code> 之后 ——
-            装到别处、只做演练、或者强制走源码：
+            <code>finx-install/install.sh</code>，它就是可以直接下载的那一个。
+            参数放在 <code>--</code> 之后 —— 装到别处、或者强制走源码：
         </p>
         <p data-lang="en">
             The script is served by jsDelivr for reachability; the same file lives at
-            <code>finx-install/standalone.sh</code> in the repository. Options go after <code>--</code> —
-            install elsewhere, rehearse, or force a source build:
+            <code>finx-install/install.sh</code> in the repository -- it is the one file you can
+            download. Options go after <code>--</code> — install elsewhere, or force a source build:
         </p>
         <div class="code-block">
             <button class="copy-btn" type="button" onclick="copyCode(this)" aria-label="Copy"><span class="copy-icon"><span class="square-back"></span><span class="square-front"></span></span></button>
             <pre><span class="prompt">$</span> … -- --prefix=/opt/finx
-<span class="prompt">$</span> … -- --dry-run
-<span class="prompt">$</span> … -- --from-source</pre>
+<span class="prompt">$</span> … -- --from-source
+<span class="prompt">$</span> … -- --no-path</pre>
         </div>
         <h3 data-lang="zh">它怎么决定装法</h3>
         <h3 data-lang="en">How it picks a method</h3>
