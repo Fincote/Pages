@@ -556,11 +556,11 @@
         <p class="formula">f(x) = f(fincote) = f(fink) + f(fincotedevelopers).</p>
 
         <div class="version-block" data-lang="zh">
-            <span class="v-line">当前版本 : 0.45.99.git</span>
+            <span class="v-line">当前版本 : 0.1.0-alpha.git</span>
             <span class="v-line">状态 : 开发中</span>
         </div>
         <div class="version-block" data-lang="en">
-            <span class="v-line">Current Version : 0.45.99.git</span>
+            <span class="v-line">Current Version : 0.1.0-alpha.git</span>
             <span class="v-line">Status : Development</span>
         </div>
 
@@ -621,13 +621,15 @@
         <h2 id="install-en" data-lang="en">Install Finx</h2>
 
         <div class="note" data-lang="zh">
-            <strong>当前阶段不推荐安装（开发者除外）。</strong> 一条命令已经可用，但预编译种子还没发布，
-            所以它会退回到源码编译 —— 需要 Xcode Command Line Tools，首次要十几分钟。
+            <strong>当前阶段不推荐安装（开发者除外）。</strong> 一条命令已经可用。
+            macOS 15（Darwin 24）+ Apple 芯片会下载约 60 MB 的预编译种子，一两分钟装完，不需要编译器；
+            其他系统目前没有对应的种子，会退回源码编译 —— 那需要 Xcode Command Line Tools，首次约半小时。
         </div>
         <div class="note" data-lang="en">
-            <strong>Not recommended for installation yet, developers excepted.</strong> The one-liner works,
-            but no prebuilt seed has been published, so it falls back to a source build — that needs the
-            Xcode Command Line Tools and takes a while the first time.
+            <strong>Not recommended for installation yet, developers excepted.</strong> The one-liner works.
+            On macOS 15 (Darwin 24) with Apple silicon it downloads a ~60 MB prebuilt seed and finishes in a
+            minute or two, no compiler needed. Other systems have no matching seed yet and fall back to a
+            source build — that needs the Xcode Command Line Tools and takes about half an hour the first time.
         </div>
 
         <h3 data-lang="zh">一条命令</h3>
@@ -642,7 +644,7 @@
             参数放在 <code>--</code> 之后 —— 装到别处、或者强制走源码：
         </p>
         <p data-lang="en">
-            The script is served by jsDelivr for reachability; the same file lives at
+            The script is served from <code>sh.finx.sh</code>; the same file lives at
             <code>finx-install/install.sh</code> in the repository -- it is the one file you can
             download. Options go after <code>--</code> — install elsewhere, or force a source build:
         </p>
@@ -668,8 +670,8 @@
                     <tr>
                         <td data-lang="zh">默认</td>
                         <td data-lang="en">Default</td>
-                        <td data-lang="zh">先探种子，探不到就源码自举并说明原因</td>
-                        <td data-lang="en">Probe for a seed; fall back to source and say why</td>
+                        <td data-lang="zh">先探种子；探不到、或与本机架构／系统不匹配，就源码自举并说明原因</td>
+                        <td data-lang="en">Probe for a seed; fall back to source, and say why</td>
                     </tr>
                     <tr>
                         <td data-lang="zh"><code>--from-source</code></td>
