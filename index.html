@@ -634,7 +634,7 @@
         <h3 data-lang="en">One command</h3>
         <div class="code-block">
             <button class="copy-btn" type="button" onclick="copyCode(this)" aria-label="Copy"><span class="copy-icon"><span class="square-back"></span><span class="square-front"></span></span></button>
-            <pre><span class="prompt">$</span> curl -fsSL https://fastly.jsdelivr.net/gh/Fincote/Finx@main/finx-install/install.sh | sudo bash</pre>
+            <pre><span class="prompt">$</span> /bin/bash -c "$(curl -fsSL https://sh.finx.sh/finx.sh)"</pre>
         </div>
         <p data-lang="zh">
             脚本从 jsDelivr 取，国内可直连；仓库里同一份文件也在
