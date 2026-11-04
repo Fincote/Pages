@@ -914,17 +914,17 @@
             The repository also ships <code>docs/TECHNICAL-GUIDE.md</code> covering the bootstrap chain, the packaging pipeline and the dpkg patches, plus <code>AGENTS.md</code> for conventions.
         </p>
 
-        <h2 data-lang="zh">许可证</h2>
-        <h2 data-lang="en">License</h2>
+        <h2 id="license" data-lang="zh">许可证</h2>
+        <h2 id="license-en" data-lang="en">License</h2>
         <p data-lang="zh">
-            Finx 沿用 Fink 的许可证，以 <strong>GPL v2</strong> 发布。许可范围写在<button class="lic-link" type="button" onclick="openLicense('LICENSE')">LICENSE</button>，许可证正文是<button class="lic-link" type="button" onclick="openLicense('COPYING')">COPYING</button>。点这两处即可在页面上读原文，安装前请各读一遍。
+            Finx 沿用 Fink 的许可证，以 <strong>GPL v2</strong> 发布。许可范围写在<button class="lic-link" type="button" onclick="openLicense('LICENSE')">LICENSE</button>，许可证正文是<button class="lic-link" type="button" onclick="openLicense('COPYING')">COPYING</button>。点这两处即可在页面上读原文，中文界面读到的是中文版；安装前请各读一遍。
         </p>
         <p data-lang="en">
             Finx keeps Fink's license and is released under the <strong>GPL v2</strong>. The scope is in
             <button class="lic-link" type="button" onclick="openLicense('LICENSE')">LICENSE</button>;
             the licence text is
             <button class="lic-link" type="button" onclick="openLicense('COPYING')">COPYING</button>.
-            Click either one to read it here; read both before installing.
+            Click either one to read it here, in Chinese on the Chinese page; read both before installing.
         </p>
 
         <div class="lic-overlay" id="lic-overlay" onclick="if (event.target === this) closeLicense()">
@@ -1022,11 +1022,26 @@
 
         let licTrigger = null;
 
+        /* 从所有镜像并发取同一个文件，谁先成功用谁。 */
+        function fetchLicence(file) {
+            const attempts = LIC_SOURCES.map(function (base) {
+                const url = base + file;
+                return fetch(url, { cache: 'no-cache' }).then(function (res) {
+                    if (!res.ok) throw new Error('HTTP ' + res.status);
+                    return res.text().then(function (text) {
+                        return { text: text, url: url };
+                    });
+                });
+            });
+            return Promise.any(attempts);
+        }
+
         function openLicense(name) {
             const overlay = document.getElementById('lic-overlay');
             const body = document.getElementById('lic-body');
             const title = document.getElementById('lic-title');
             const src = document.getElementById('lic-src');
+            const zh = document.documentElement.classList.contains('lang-zh');
 
             licTrigger = document.activeElement;
             title.textContent = name;
@@ -1035,17 +1050,14 @@
             overlay.classList.add('open');
             document.body.style.overflow = 'hidden';
 
-            const attempts = LIC_SOURCES.map(function (base) {
-                const url = base + name;
-                return fetch(url, { cache: 'no-cache' }).then(function (res) {
-                    if (!res.ok) throw new Error('HTTP ' + res.status);
-                    return res.text().then(function (text) {
-                        return { text: text, url: url };
-                    });
-                });
-            });
-
-            Promise.any(attempts)
+            /* 中文界面读中文版；中文版取不到时退回英文原文，而不是让读者
+               对着一个错误框——读不到比读到英文更糟。 */
+            const want = zh ? name + '-zh' : name;
+            fetchLicence(want)
+                .catch(function () {
+                    if (!zh) throw new Error('none');
+                    return fetchLicence(name);
+                })
                 .then(function (hit) {
                     body.textContent = hit.text;
                     src.href = hit.url;
