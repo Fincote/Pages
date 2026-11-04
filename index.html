@@ -401,10 +401,10 @@
 
         .code-block .prompt { color: var(--accent); }
 
-        /* 安装演示：命令下方，占正文列宽的 75%，居中。
+        /* 安装演示：命令下方，占正文列宽的 50%，居中。
            GIF 自带窗口边框，这里不再加第二层框。 */
         .install-demo {
-            width: 75%;
+            width: 50%;
             margin: 22px auto 26px;
         }
 
@@ -414,6 +414,10 @@
             height: auto;
             border-radius: 10px;
             box-shadow: 0 10px 28px rgba(26, 43, 76, 0.18);
+        }
+
+        @media (max-width: 1000px) {
+            .install-demo { width: 75%; }
         }
 
         @media (max-width: 720px) {
