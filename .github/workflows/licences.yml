@@ -1,0 +1,135 @@
+name: licences
+
+# licences/ 是本仓库里唯一由别处生成的内容：它是 Fincote/Finx 根目录下
+# LICENSE、COPYING 与两份中文参考译本的逐字节副本。
+# 所以这里不编辑它们，只同步 —— 改内容请改 Finx 仓库。
+#
+# 为什么放在站点自己的域下：页面要在浏览器里取这四个文件。raw.githubusercontent.com
+# 在部分网络下会被直接重置，jsDelivr 能通但分支引用有缓存滞后。走同源就没有
+# 第二个中间人，也不会有跨域问题。
+
+on:
+  schedule:
+    # 上游改了而没人动这个仓库时，最迟一天后被发现
+    - cron: '23 3 * * *'
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/licences.yml'
+  pull_request:
+    paths:
+      - 'licences/**'
+      - '.github/workflows/licences.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: licence-sync
+  cancel-in-progress: false
+
+env:
+  UPSTREAM: Fincote/Finx
+  UPSTREAM_REF: main
+  FILES: LICENSE COPYING LICENSE-zh COPYING-zh
+  LOCAL_DIR: licences
+
+jobs:
+  # 上游有新版本就拉过来提交。定时、手动，以及本工作流自身变更时运行。
+  sync:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch the upstream copies
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/up"
+          for f in $FILES; do
+            gh api "repos/$UPSTREAM/contents/$f?ref=$UPSTREAM_REF" \
+              -H 'Accept: application/vnd.github.raw' > "$RUNNER_TEMP/up/$f"
+            echo "upstream $f: $(wc -c < "$RUNNER_TEMP/up/$f" | tr -d ' ') bytes"
+          done
+
+      - name: Compare
+        id: cmp
+        run: |
+          set -euo pipefail
+          drift=0
+          for f in $FILES; do
+            if cmp -s "$RUNNER_TEMP/up/$f" "$LOCAL_DIR/$f"; then
+              echo "$f is up to date"
+            else
+              echo "$f differs from $UPSTREAM@$UPSTREAM_REF"
+              drift=1
+            fi
+          done
+          echo "drift=$drift" >> "$GITHUB_OUTPUT"
+
+      - name: Take the upstream copies
+        if: steps.cmp.outputs.drift == '1'
+        run: |
+          set -euo pipefail
+          mkdir -p "$LOCAL_DIR"
+          for f in $FILES; do
+            cp "$RUNNER_TEMP/up/$f" "$LOCAL_DIR/$f"
+          done
+          echo "took $(echo $FILES | wc -w | tr -d ' ') files"
+
+      - name: Commit and push
+        if: steps.cmp.outputs.drift == '1'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          sha=$(gh api "repos/$UPSTREAM/commits/$UPSTREAM_REF" --jq .sha)
+          short=$(printf '%s' "$sha" | cut -c1-8)
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$LOCAL_DIR"
+          git commit -F - <<MSG
+          Sync licences/ with $UPSTREAM@$short
+
+          $FILES at $sha
+
+          Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
+          MSG
+          git push
+
+  # 手改 licences/ 的 PR 在这里被挡下：它一定会在下一次同步时被覆盖。
+  verify:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch the upstream copies
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/up"
+          for f in $FILES; do
+            gh api "repos/$UPSTREAM/contents/$f?ref=$UPSTREAM_REF" \
+              -H 'Accept: application/vnd.github.raw' > "$RUNNER_TEMP/up/$f"
+          done
+
+      - name: Require licences/ to match upstream
+        run: |
+          set -euo pipefail
+          failed=0
+          for f in $FILES; do
+            if cmp -s "$RUNNER_TEMP/up/$f" "$LOCAL_DIR/$f"; then
+              echo "$f matches $UPSTREAM@$UPSTREAM_REF"
+            else
+              echo "::error file=$LOCAL_DIR/$f::$LOCAL_DIR/$f is a copy of $f in $UPSTREAM. Change it there, not here."
+              diff -u "$RUNNER_TEMP/up/$f" "$LOCAL_DIR/$f" || true
+              failed=1
+            fi
+          done
+          exit "$failed"

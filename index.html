@@ -1004,17 +1004,19 @@
 
         /* ---- 许可证查看 ----
          *
-         * 直接取两个文件的原文，不走 GitHub 的网页界面：用户要读的是文件本身,
+         * 直接取两个文件的原文，不走 GitHub 的网页界面：用户要读的是文件本身，
          * 不是它的渲染结果。
          *
-         * 三个源并发取、谁先成功用谁。raw.githubusercontent.com 在部分网络下会
-         * 被直接重置（实测 ERR_CONNECTION_RESET），单源会让按钮变成死按钮；
-         * jsDelivr 是缓存，可能落后 main 几分钟，所以仍让 raw 并发去抢。
+         * 同源优先：licences/ 由 .github/workflows/licences.yml 从 Fincote/Finx
+         * 逐字节同步，路径上没有第三方。远端那三个只做兜底 —— 镜像站或有人把
+         * 页面截图下来单独部署时，licences/ 不在，仍要读得到。
          *
-         * 不引入 fetch 之外的依赖；全部失败时把话说明白，而不是留一个
-         * 「Loading…」永远转下去。
+         * raw.githubusercontent.com 在部分网络下会被直接重置（实测
+         * ERR_CONNECTION_RESET），所以不能只留它一条；jsDelivr 能通，但分支
+         * 引用有缓存滞后，放在后面。
          */
         const LIC_SOURCES = [
+            'licences/',
             'https://raw.githubusercontent.com/Fincote/Finx/main/',
             'https://fastly.jsdelivr.net/gh/Fincote/Finx@main/',
             'https://cdn.jsdelivr.net/gh/Fincote/Finx@main/'
@@ -1022,16 +1024,29 @@
 
         let licTrigger = null;
 
+        /* 每个源最多给 8 秒。不加超时的话，一个挂住不回的源能把弹窗钉在
+           「Loading…」上半分钟以上 —— Promise.any 要等所有尝试都失败才报错，
+           而中文版失败后还要再试一遍英文版。 */
+        const LIC_TIMEOUT = 8000;
+
         /* 从所有镜像并发取同一个文件，谁先成功用谁。 */
         function fetchLicence(file) {
             const attempts = LIC_SOURCES.map(function (base) {
                 const url = base + file;
-                return fetch(url, { cache: 'no-cache' }).then(function (res) {
-                    if (!res.ok) throw new Error('HTTP ' + res.status);
-                    return res.text().then(function (text) {
-                        return { text: text, url: url };
+                const ctl = new AbortController();
+                const timer = setTimeout(function () { ctl.abort(); }, LIC_TIMEOUT);
+                return fetch(url, { cache: 'no-cache', signal: ctl.signal })
+                    .then(function (res) {
+                        if (!res.ok) throw new Error('HTTP ' + res.status);
+                        return res.text().then(function (text) {
+                            clearTimeout(timer);
+                            return { text: text, url: url };
+                        });
+                    })
+                    .catch(function (err) {
+                        clearTimeout(timer);
+                        throw err;
                     });
-                });
             });
             return Promise.any(attempts);
         }

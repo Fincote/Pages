@@ -1,0 +1,69 @@
+Finx — License Scope
+====================
+
+This repository is under two GPL grants, applied to different parts.
+
+Files
+-----
+
+    COPYING     GNU General Public License, version 2 (FSF text, unmodified)
+    COPYING-zh  the same licence in Chinese, an unofficial reference rendering
+    LICENSE     This file: which part of the tree carries which grant
+    LICENSE-zh  this file, in Chinese
+
+GPL-2.0-only
+------------
+
+    finx-install/         installer sources, and the generated install.sh
+    scripts/              repository checks and release tools
+    base-files/pack.sh    payload packer
+    docs/                 documentation
+    LICENSE               this file
+
+GPL-2.0-or-later
+----------------
+
+    bootstrap
+    setup.sh
+    install.sh
+    perlmod/Fink/**
+    10.9-libcxx/
+    base-files/           the whole payload, including its own COPYING
+    mirror/
+    dpkg-checkall.sh
+    inject.pl
+    pre-build-test.sh
+    finx-virtual-pkgs.in
+
+Third party
+-----------
+
+    update/               autoconf / automake helper scripts
+    10.9-libcxx/*.patch   patch text, following the upstream project
+
+Reading a file header
+---------------------
+
+The grant is stated at the top of each file.
+
+    ... either version 2 of the License, or (at your option) any later version
+        GPL-2.0-or-later
+
+    ... version 2 of the License.
+        GPL-2.0-only
+
+Distribution
+------------
+
+The combined work may be distributed under GPL version 2 only.
+
+Adding or modifying files
+-------------------------
+
+New files carry
+
+    Copyright (c) <2026> Sha0huaZhang <zsh@finx.sh>
+    ... version 2 of the License.
+
+Files inherited from Fink keep their original wording and gain one copyright
+line.
