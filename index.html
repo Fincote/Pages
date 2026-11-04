@@ -104,6 +104,101 @@
 
         .lang-btn:hover { background: rgba(255, 255, 255, 0.45); }
 
+        /* ---- 许可证查看：句内可点文字 + 弹窗 ---- */
+        .lic-link {
+            appearance: none;
+            border: 0;
+            background: transparent;
+            color: inherit;
+            margin: 0;
+            padding: 1px 3px;
+            border-radius: 4px;
+            font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+            font-size: 0.92em;
+            font-weight: 700;
+            cursor: pointer;
+            text-decoration: underline;
+            text-decoration-style: dotted;
+            text-decoration-thickness: 1.5px;
+            text-underline-offset: 3px;
+            transition: background 0.18s ease, color 0.18s ease;
+        }
+        .lic-link:hover,
+        .lic-link:focus-visible {
+            background: var(--ink);
+            color: var(--surface);
+            text-decoration-color: transparent;
+        }
+
+        .lic-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(12, 30, 52, 0.55);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            z-index: 100;
+        }
+        .lic-overlay.open { display: flex; }
+
+        .lic-dialog {
+            background: var(--surface);
+            border-radius: var(--radius);
+            width: min(820px, 100%);
+            max-height: 82vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 18px 50px rgba(10, 28, 50, 0.35);
+        }
+        .lic-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 16px 20px;
+            border-bottom: 1px solid rgba(58, 106, 160, 0.25);
+        }
+        .lic-head h3 {
+            margin: 0;
+            font-size: 1rem;
+            color: var(--ink);
+        }
+        .lic-close {
+            appearance: none;
+            border: 1px solid var(--line);
+            background: transparent;
+            color: var(--ink);
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            font-size: 1rem;
+            line-height: 1;
+            cursor: pointer;
+        }
+        .lic-close:hover { background: var(--ink); color: var(--surface); }
+
+        .lic-body {
+            margin: 0;
+            padding: 18px 20px;
+            overflow: auto;
+            background: #f7fafd;
+            color: var(--ink);
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            font-size: 0.78rem;
+            line-height: 1.65;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        .lic-note {
+            padding: 10px 20px 16px;
+            margin: 0;
+            font-size: 0.78rem;
+            color: var(--ink-soft);
+        }
+        .lic-note a { color: var(--ink); }
+
         .lang-btn.active {
             background: var(--ink);
             border-color: var(--ink);
@@ -822,11 +917,30 @@
         <h2 data-lang="zh">许可证</h2>
         <h2 data-lang="en">License</h2>
         <p data-lang="zh">
-            Finx 沿用 Fink 的许可证，以 <strong>GPL v2</strong> 发布。详见仓库中的 <code>COPYING</code>。
+            Finx 沿用 Fink 的许可证，以 <strong>GPL v2</strong> 发布。许可范围写在<button class="lic-link" type="button" onclick="openLicense('LICENSE')">LICENSE</button>，许可证正文是<button class="lic-link" type="button" onclick="openLicense('COPYING')">COPYING</button>。点这两处即可在页面上读原文，安装前请各读一遍。
         </p>
         <p data-lang="en">
-            Finx keeps Fink's license and is released under the <strong>GPL v2</strong>. See <code>COPYING</code> in the repository.
+            Finx keeps Fink's license and is released under the <strong>GPL v2</strong>. The scope is in
+            <button class="lic-link" type="button" onclick="openLicense('LICENSE')">LICENSE</button>;
+            the licence text is
+            <button class="lic-link" type="button" onclick="openLicense('COPYING')">COPYING</button>.
+            Click either one to read it here; read both before installing.
         </p>
+
+        <div class="lic-overlay" id="lic-overlay" onclick="if (event.target === this) closeLicense()">
+            <div class="lic-dialog" role="dialog" aria-modal="true" aria-labelledby="lic-title">
+                <div class="lic-head">
+                    <h3 id="lic-title">LICENSE</h3>
+                    <button class="lic-close" type="button" onclick="closeLicense()" aria-label="Close">×</button>
+                </div>
+                <pre class="lic-body" id="lic-body">Loading…</pre>
+                <p class="lic-note">
+                    <span data-lang="zh">文本取自已发布的仓库原文，逐字节一致。</span>
+                    <span data-lang="en">Fetched verbatim from the published repository.</span>
+                    <a id="lic-src" href="#" target="_blank" rel="noopener"><span data-lang="zh">原文地址</span><span data-lang="en">Source</span></a>
+                </p>
+            </div>
+        </div>
 
     </main>
 
@@ -887,6 +1001,76 @@
                 console.error('Failed to copy: ', err);
             });
         }
+
+        /* ---- 许可证查看 ----
+         *
+         * 直接取两个文件的原文，不走 GitHub 的网页界面：用户要读的是文件本身,
+         * 不是它的渲染结果。
+         *
+         * 三个源并发取、谁先成功用谁。raw.githubusercontent.com 在部分网络下会
+         * 被直接重置（实测 ERR_CONNECTION_RESET），单源会让按钮变成死按钮；
+         * jsDelivr 是缓存，可能落后 main 几分钟，所以仍让 raw 并发去抢。
+         *
+         * 不引入 fetch 之外的依赖；全部失败时把话说明白，而不是留一个
+         * 「Loading…」永远转下去。
+         */
+        const LIC_SOURCES = [
+            'https://raw.githubusercontent.com/Fincote/Finx/main/',
+            'https://fastly.jsdelivr.net/gh/Fincote/Finx@main/',
+            'https://cdn.jsdelivr.net/gh/Fincote/Finx@main/'
+        ];
+
+        let licTrigger = null;
+
+        function openLicense(name) {
+            const overlay = document.getElementById('lic-overlay');
+            const body = document.getElementById('lic-body');
+            const title = document.getElementById('lic-title');
+            const src = document.getElementById('lic-src');
+
+            licTrigger = document.activeElement;
+            title.textContent = name;
+            src.href = LIC_SOURCES[0] + name;
+            body.textContent = 'Loading…';
+            overlay.classList.add('open');
+            document.body.style.overflow = 'hidden';
+
+            const attempts = LIC_SOURCES.map(function (base) {
+                const url = base + name;
+                return fetch(url, { cache: 'no-cache' }).then(function (res) {
+                    if (!res.ok) throw new Error('HTTP ' + res.status);
+                    return res.text().then(function (text) {
+                        return { text: text, url: url };
+                    });
+                });
+            });
+
+            Promise.any(attempts)
+                .then(function (hit) {
+                    body.textContent = hit.text;
+                    src.href = hit.url;
+                })
+                .catch(function () {
+                    body.textContent =
+                        'Could not load ' + name + ' from any mirror.\n\n' +
+                        'Open the link below instead.';
+                });
+        }
+
+        function closeLicense() {
+            const overlay = document.getElementById('lic-overlay');
+            if (!overlay.classList.contains('open')) return;
+            overlay.classList.remove('open');
+            document.body.style.overflow = '';
+            if (licTrigger) {
+                licTrigger.focus();
+                licTrigger = null;
+            }
+        }
+
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') closeLicense();
+        });
 
         (function () {
             let saved = null;
