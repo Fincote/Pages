@@ -401,6 +401,25 @@
 
         .code-block .prompt { color: var(--accent); }
 
+        /* 安装演示：命令下方，占正文列宽的 75%，居中。
+           GIF 自带窗口边框，这里不再加第二层框。 */
+        .install-demo {
+            width: 75%;
+            margin: 22px auto 26px;
+        }
+
+        .install-demo img {
+            display: block;
+            width: 100%;
+            height: auto;
+            border-radius: 10px;
+            box-shadow: 0 10px 28px rgba(26, 43, 76, 0.18);
+        }
+
+        @media (max-width: 720px) {
+            .install-demo { width: 100%; }
+        }
+
         .copy-btn {
             position: absolute;
             top: 10px;
@@ -733,6 +752,10 @@
             <button class="copy-btn" type="button" onclick="copyCode(this)" aria-label="Copy"><span class="copy-icon"><span class="square-back"></span><span class="square-front"></span></span></button>
             <pre><span class="prompt">$</span> /bin/bash -c "$(curl -fsSL https://sh.finx.sh/finx.sh)"</pre>
         </div>
+        <figure class="install-demo">
+            <img src="finx-install.gif" width="780" height="556" loading="lazy"
+                 alt="Running the Finx install command in a terminal: the seed is downloaded and verified, the licence is shown, and the install finishes in one pass.">
+        </figure>
         <p data-lang="zh">
             仓库里同一份文件也在
             <code>finx-install/install.sh</code>，它就是可以直接下载的那一个。
