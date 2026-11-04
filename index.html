@@ -1024,31 +1024,39 @@
 
         let licTrigger = null;
 
-        /* 每个源最多给 8 秒。不加超时的话，一个挂住不回的源能把弹窗钉在
-           「Loading…」上半分钟以上 —— Promise.any 要等所有尝试都失败才报错，
-           而中文版失败后还要再试一遍英文版。 */
+        const LIC_ORIGIN_TIMEOUT = 4000;
         const LIC_TIMEOUT = 8000;
 
-        /* 从所有镜像并发取同一个文件，谁先成功用谁。 */
-        function fetchLicence(file) {
-            const attempts = LIC_SOURCES.map(function (base) {
-                const url = base + file;
-                const ctl = new AbortController();
-                const timer = setTimeout(function () { ctl.abort(); }, LIC_TIMEOUT);
-                return fetch(url, { cache: 'no-cache', signal: ctl.signal })
-                    .then(function (res) {
-                        if (!res.ok) throw new Error('HTTP ' + res.status);
-                        return res.text().then(function (text) {
-                            clearTimeout(timer);
-                            return { text: text, url: url };
-                        });
-                    })
-                    .catch(function (err) {
+        /* 取一份，超时就放弃。没有超时的话，一个挂住不回的源能把弹窗钉在
+           「Loading…」上半分钟以上。 */
+        function attempt(base, file, timeoutMs) {
+            const url = base + file;
+            const ctl = new AbortController();
+            const timer = setTimeout(function () { ctl.abort(); }, timeoutMs);
+            return fetch(url, { cache: 'no-cache', signal: ctl.signal })
+                .then(function (res) {
+                    if (!res.ok) throw new Error('HTTP ' + res.status);
+                    return res.text().then(function (text) {
                         clearTimeout(timer);
-                        throw err;
+                        return { text: text, url: url };
                     });
-            });
-            return Promise.any(attempts);
+                })
+                .catch(function (err) {
+                    clearTimeout(timer);
+                    throw err;
+                });
+        }
+
+        /* 同源优先，而且不与远端赛跑：licences/ 就是此刻部署的这一份，让它赢
+           才算数。实测赛跑时 GitHub Pages 冷启动慢于 jsDelivr，读者拿到的
+           反而是缓存里的旧文本。只有同源拿不到，才去并发抢远端。 */
+        function fetchLicence(file) {
+            return attempt(LIC_SOURCES[0], file, LIC_ORIGIN_TIMEOUT)
+                .catch(function () {
+                    return Promise.any(LIC_SOURCES.slice(1).map(function (base) {
+                        return attempt(base, file, LIC_TIMEOUT);
+                    }));
+                });
         }
 
         function openLicense(name) {
